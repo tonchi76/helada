@@ -13,6 +13,7 @@ Topico programacion: /placa_0200/programa1
 28/07/2020 : Creada 8 temperaturas de control - en loop control por temp_control_1
             Publicacion de Temp_ext y Temp_hoja cada 60seg
             agregado al git
+            se creo la rama dev
 
 -------------BORRADO DE EEPROM---------------
 for (int i = 0 ; i < EEPROM.length() ; i++) {
