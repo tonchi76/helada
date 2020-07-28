@@ -9,8 +9,10 @@ Cuenta con un reloj y una programacion por DIA, HORA INI, HORA FIN
 FORMATO PARA ENVIAR LA PROGRAMACION (2,15,30,16,30)(dia,hora_ini,min_ini,hora_fin,min_fin)
 Topico programacion: /placa_0200/programa1
 
+
 28/07/2020 : Creada 8 temperaturas de control - en loop control por temp_control_1
             Publicacion de Temp_ext y Temp_hoja cada 60seg
+            agregado al git
 
 -------------BORRADO DE EEPROM---------------
 for (int i = 0 ; i < EEPROM.length() ; i++) {
