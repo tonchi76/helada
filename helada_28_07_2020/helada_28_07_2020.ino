@@ -14,6 +14,7 @@ Topico programacion: /placa_0200/programa1
             Publicacion de Temp_ext y Temp_hoja cada 60seg
             agregado al git
             se creo la rama dev
+29/07/2020 : Credo el control del gradiente            
 
 -------------BORRADO DE EEPROM---------------
 for (int i = 0 ; i < EEPROM.length() ; i++) {
@@ -76,10 +77,10 @@ String temp_control_5 = "2";
 String temp_control_6 = "2.5";
 String temp_control_7 = "2";
 String temp_control_8 = "1";
-String control_ext_1;
-String control_ext_2;
-String control_hoja_1;
-String control_hoja_2;
+String control_ext_1 = "0";
+String control_ext_2 = "0";
+String control_hoja_1 = "0";
+String control_hoja_2 = "0";
 int contador = 0;
 
 unsigned long previousMillis = 0;
@@ -96,6 +97,7 @@ char TEMP_AJUSTE_LEIDA[50];
 char DEBUG[50];
 char ACTUALIZACION[50];
 char RESET[50];
+char ALERTA[50];
 
 const char *mqtt_server = "serviciosiot.com.ar";
 const int mqtt_port = 1883;
@@ -304,33 +306,17 @@ void lee_temperatura(){
   temp = sensor.getTempCByIndex(0);
   strtemp = String(temp,1); //1 decimal
   strtemp.toCharArray(valueStrTEMP, 15);
-  Serial.println("Enviando: [" +  String(TEMP_EXT) + "] " + String(strtemp));
   client.publish(TEMP_EXT, valueStrTEMP);
+  //Serial.println("Enviando: [" +  String(TEMP_EXT) + "] " + String(strtemp));
 }
 
 void lee_temperatura_hoja(){
- 
   temp = sensor.getTempCByIndex(0);
   strtemp_hoja = String(temp,1); //1 decimal
   strtemp_hoja.toCharArray(valueStrleido_hoja, 15);
-  Serial.println("Enviando: [" +  String(TEMP_EXT) + "] " + String(strtemp_hoja));
   client.publish(TEMP_HOJA, valueStrleido_hoja);
+  //Serial.println("Enviando: [" +  String(TEMP_EXT) + "] " + String(strtemp_hoja));
 }
-
-void lee_temp_guardadas(){
- 
-  temp_leido = lee(100);
-  strtemp_ext = String(temp,1); //1 decimal
-//  String to_send = String(NAME) + "," + String(strtemp);
-  //to_send.toCharArray(valueStrTEMP, 15);
-  strtemp_ext.toCharArray(valueStrleido_ext, 15);
-  Serial.println("Enviando: [" +  String(TEMP_EXT) + "] " + String(strtemp_ext));
-  client.publish(TEMP_EXT, valueStrleido_ext);
-}
-
-
-
-
 
 
 //**** CONFIGURACION WIFI  *******
@@ -419,7 +405,7 @@ void reconnect(){                                              //FUNCION PARA RE
       Serial.println("Conexion MQTT exitosa!!");
       String str_NAME = NAME + USERNAME +"online";
       str_NAME.toCharArray(NOMBRE, 50);
-      client.publish("alertas",NOMBRE);
+      client.publish(ALERTA,NOMBRE);
       client.subscribe(MOTOR);
       client.subscribe(TEMPERATURA_AJUSTE);
       client.subscribe(ACTUALIZACION);
@@ -478,7 +464,9 @@ void setup() {
  intento_conexion();
  client.setServer(mqtt_server, mqtt_port);
  client.setCallback(callback);
-          //*****  TOPIC  **************
+          //*****  TOPIC  ******alerta
+  String alerta = "/" + USERNAME + "/" + "alerta";
+  alerta.toCharArray(ALERTA, 50);        
   String temp_ext = "/" + USERNAME + "/" + "temp_ext";
   temp_ext.toCharArray(TEMP_EXT, 50);
   String temp_hoja = "/" + USERNAME + "/" + "temp_hoja";
@@ -495,6 +483,7 @@ void setup() {
   debug.toCharArray(DEBUG, 50);
   String reset = "reset";
   reset.toCharArray(RESET, 50);
+
 
 
 //temp_leido = lee(100); // Ajuste de Temperatura de Control
@@ -522,10 +511,11 @@ Serial.println(String (VER_ARCHIVO));
 Serial.println("");
 Serial.println("Conexion Conesa a: NuestraCasa");
 Serial.println("El pass : Mateo2018");
-
+Serial.println(" ");
+Serial.println("**Contador**: " +String(contador));
 ////////////////////PUBLICACION TEMP AL INICIO//////////////////////////////
-lee_temperatura();
-lee_temperatura_hoja();
+//lee_temperatura();
+//lee_temperatura_hoja();
 
   ////////////////////////////////////////////////////////////////////////////
 
@@ -554,49 +544,15 @@ if (client.connected()==false){
 //------------------------SENSOR DE TEMPERATURA------------------------//
 //*************************LM35 & 18b20 *****************************************
 //SENSOR = analogRead(A0);				// lectura de entrada analogica A0
-temp = sensor.getTempCByIndex(0);
-strtemp = String(temp,0); //1 decimal
-//temp_hoja = sensor.getTempCByIndex(1);
-//strtemp_hoja= String(temp_hoja,0); //1 decimal
+//temp = sensor.getTempCByIndex(0);
+//strtemp = String(temp,0); //1 decimal
+
 
 //***************Control 1**********************//
-temp_control_1 = "25";
-int str_control_1= atoi(temp_control_1.c_str());
-  if (temp <= str_control_1) {
-  digitalWrite(sirena, HIGH);
-  Serial.println("Temperatura control 1 : " + String(temp_control_1));
-  Serial.println("Temperatura ext : " + String(strtemp));
-  }else{ digitalWrite(sirena, LOW);}
+
 //***************Control 2**********************//
-//str_todos = PAYLOAD;
- //graba(118, str_todos);
 
-//------------------------termostato------------------------//
 
-//int str_temp_leido = atoi(temp_leido.c_str());
-
-  ////////////////// termostato/////////////////////////////////////////////////
-  /*
-  if (temp >= str_control_1) {   //Compara la temperatura contra el temp_ajuste
-    digitalWrite(led, HIGH);
-    if (str_debug==1) {
-    Serial.println("termostato funcionando  on");
-    }
-  }
-
-  if (temp > -10) {
-  digitalWrite(sirena, LOW);
-   if (str_debug==1) {
-   Serial.println("sirena sonando!!!!! ");
-    }
-  }
-  if (millis() - lastMsg >600000) {
-    lastMsg= millis();
-      if (str_debug==1) {
-        Serial.println("temperatura= " + String(temp));
-        Serial.println("TEMPERATURA LEIDA= " + String(str_control_1));
-        }
-}*/
 
 
 
@@ -604,49 +560,104 @@ int str_control_1= atoi(temp_control_1.c_str());
 
 
 unsigned long currentMillis3 = millis();
-if (currentMillis3 - previousMillis3 >= 10000) { //envia la temperatura cada 15 minutos (150000)
+if (currentMillis3 - previousMillis3 >= 20000) { //envia la temperatura cada 15 minutos (150000)
         previousMillis3 = currentMillis3;
         lee_temperatura();
-        lee_temperatura_hoja();
-        contador++;
-        if (contador=1){
+        //lee_temperatura_hoja();
+        contador = contador + 1;
+        if (contador==1){
            graba(140, strtemp);
-           graba(100, strtemp_hoja);
+           if (str_debug= 1){
+              Serial.println("**Temperatura Control 1 grabada!**: ");
+            }
         }
-        if (contador=2){
+        if (contador==2){
            graba(150, strtemp);
            graba(110, strtemp_hoja);
+           contador = 0;
+           control_hoja_1 = lee(100);
+           control_ext_1 = lee(140);
+           control_hoja_2 = lee(110);
+           control_ext_2 = lee(150);
+           int str_control_1= atoi(control_hoja_1.c_str());
+           int str_control_2= atoi(control_hoja_2.c_str());
+           int str_control_11= atoi(control_ext_1.c_str());
+           int str_control_22= atoi(control_ext_2.c_str());
+           int gradiente_ext = str_control_11 - str_control_22;
+           int gradiente_hoja = str_control_1 - str_control_2;
+           if (str_debug= 1){
+              Serial.println("**Temperatura Control 2 grabada!**: ");
+              Serial.println("temperatura ext: " + String(strtemp));
+              Serial.println("temperatura Leida ext 1: " + String(control_ext_1));
+              Serial.println("temperatura Leida ext 2: " + String(control_ext_2));
+              Serial.println("Gradiente ext : "+ String(gradiente_ext));
+              Serial.println("Gradiente hoja : "+ String(gradiente_hoja));
+            }  
+           
+           
+
+            //*************** Control de temperatura externa****************//
+            if (gradiente_ext >= 1 & temp<13){  //GRADIENTE
+                digitalWrite(sirena, HIGH);
+                client.publish(ALERTA, "Alerta por ADVECCION");
+                if (str_debug= 1){
+                    Serial.println("******ADVECCION*******");
+                    Serial.println("Alerta por ADVECCION : " );
+                    Serial.println("Gradiente Ext : "+ String(gradiente_ext));
+                    
+                  }
+            }else{ 
+              digitalWrite(sirena, LOW);
+              client.publish(ALERTA, "Condicion Normal");
+            }
+            //*************** Control de temperatura hoja****************//
+            if (gradiente_hoja >= 1 & temp<13){  //GRADIENTE temp < 4
+                digitalWrite(sirena, HIGH);
+                client.publish(ALERTA, "Alerta por Radiacion");
+                if (str_debug= 1){
+                    Serial.println("******RADIACION*******");
+                    Serial.println("Alerta por RADIACION : " );
+                    Serial.println("Gradiente Ext : "+ String(gradiente_ext)); 
+                  }
+            }else{ 
+              digitalWrite(sirena, LOW);
+              client.publish(ALERTA, "Radiacion Normal");
+            }
+
+           //*************** Control de temperatura diferencia temp y hoja****************//
+           if (((str_control_22 - str_control_2)>1)& temp<13){  //GRADIENTE
+              digitalWrite(sirena, HIGH);
+              client.publish(ALERTA, "Alerta por Radiacion");
+                if (str_debug= 1){
+                    Serial.println("******RADIACION*******");
+                    Serial.println("Alerta por RADIACION : " );
+                    
+                  }
+           
+           }
          }
         
-        
-          control_hoja_1 = lee(100);
-          control_ext_1 = lee(140);
-          if (/* condition */)
-          {
-            /* code */
-          }
-          
-        
-        
-
-        
-        Serial.println("temperatura hoja: " + String(strtemp_hoja));
-        Serial.println("temperatura Leida hoja: " + String(control_hoja_1));
-        
-        Serial.println("temperatura hoja: " + String(strtemp));
-        Serial.println("temperatura Leida hoja: " + String(control_ext_1));
-        
-        
-
       }
-
+/*
 unsigned long currentMillis = millis();
-if (currentMillis - previousMillis >= 80000) { //envia la temperatura cada 25 segundos
-    previousMillis = currentMillis;
-     control_hoja_1 = lee(100);
-     Serial.println("temperatura hoja: " + String(strtemp_hoja));
-     Serial.println("temperatura Leida hoja: " + String(control_hoja_1));
+if (currentMillis - previousMillis >= 8000) { //envia la temperatura cada 25 segundos
+     previousMillis = currentMillis;
+     contador = contador + 1;
+     //Serial.println("**Contador**: " +String(contador));
+     if (contador == 1)
+     {
+       Serial.println("**Temperatura Control 1 grabada!**: ");
+       //Serial.println("**Contador**: " +String(contador));
+     }
+     delay(100);
+     if (contador == 3)
+     {
+       Serial.println("**Temperatura Control 2 grabada!**: ");
+       //Serial.println("**Contador**: " +String(contador));
+       contador = 0;
+     }
    
    }
-
+   Serial.println("**Contador**: " +String(contador));
+*/
 }
