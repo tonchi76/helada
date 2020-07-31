@@ -14,7 +14,7 @@ Topico programacion: /placa_0200/programa1
             Publicacion de Temp_ext y Temp_hoja cada 60seg
             agregado al git
             se creo la rama dev
-29/07/2020 : Credo el control del gradiente            
+29/07/2020 : Credo el control del gradiente  por radiacion y por adveccion          
 
 -------------BORRADO DE EEPROM---------------
 for (int i = 0 ; i < EEPROM.length() ; i++) {
@@ -60,14 +60,18 @@ char valueStrleido_ext[15];
 char valueStrleido_hoja[15];
 float temp;
 float temp_hoja;
+int temp_control;
 String estado_motor;
 String temp_ajuste;
 String temperatura_ajuste = "";
+String str_temp;
+String temperatura_ajuste_hoja = "";
 String temp_leido;
 String autom;
 String automatico = "HIGH";
 String motor;
 int str_debug =0;
+
 //Temperaturas control
 String temp_control_1 = "4";
 String temp_control_2 = "3.5";
@@ -82,6 +86,7 @@ String control_ext_2 = "0";
 String control_hoja_1 = "0";
 String control_hoja_2 = "0";
 int contador = 0;
+const char separator = ',';
 
 unsigned long previousMillis = 0;
 unsigned long previousMillis2 = 0;
@@ -93,6 +98,7 @@ char TEMP_EXT[50];
 char TEMP_HOJA[50];
 char MOTOR[50];
 char TEMPERATURA_AJUSTE[50];
+char TEMPERATURA_AJUSTE_HOJA[50];
 char TEMP_AJUSTE_LEIDA[50];
 char DEBUG[50];
 char ACTUALIZACION[50];
@@ -178,6 +184,7 @@ String arregla_simbolos(String a) {
 }
 //---------------FUNCIONES--------------------//
 void lee_temperatura();
+void lee_temperatura_hoja();
 void(* resetFunc) (void) = 0; //declare reset function @ address 0
 
 //*******  G R A B A R  EN LA  E E P R O M  ***********
@@ -211,24 +218,30 @@ String lee(int addr) {
 //----------------------CALLBACK------------------------------//
 void callback(char* topic, byte* payload, unsigned int lenght){
 
-  char PAYLOAD[5] = "    ";
+  char PAYLOAD[20] = "    ";
 
   //String str_topic(topic);
                                             //deja un espacio en blanco
   //String temperatura_ajuste = "";
   temperatura_ajuste = "";
+
  if (String(topic) ==  TEMPERATURA_AJUSTE) {
-   Serial.println("");
-   Serial.print("Mensaje recibido bajo el topico->");
-   Serial.println(topic);
-   //Serial.print(topic);
-   Serial.print("\n");
-  for (int i = 0; i < lenght; i++) {
-    temperatura_ajuste += (char)payload[i];
-   }
-   //temperatura_ajuste.trim();
-   graba(100,temperatura_ajuste);
+      Serial.println("");
+      Serial.print("Mensaje recibido bajo el topico->");
+      Serial.println(topic);
+      Serial.print("\n");
+      for (int i = 0; i < lenght; i++) {
+         temperatura_ajuste += (char)payload[i];
+        }    
+      temperatura_ajuste.trim();
+      Serial.println("Temperatura ajuste recibida -> "+ String(temperatura_ajuste));
+      graba(90, temperatura_ajuste);
   }
+   
+   
+ 
+
+
 
   if (String(topic) == "actualizar") {
     Serial.println("");
@@ -249,9 +262,11 @@ void callback(char* topic, byte* payload, unsigned int lenght){
       }
         if (PAYLOAD[0] == 'S'){   // debug si
           str_debug= 1;
+          Serial.print("str_debug-> "+String(str_debug));
          }
-         if (PAYLOAD[0] == 'N'){   // debug si
+         if (PAYLOAD[0] == 'N'){   // debug no
            str_debug= 0;
+           Serial.print("str_debug-> "+String(str_debug));
           }
     }
 
@@ -283,39 +298,40 @@ void callback(char* topic, byte* payload, unsigned int lenght){
         Serial.println("Mensaje recibido : N");
         automatico = "LOW";
         estado_motor = "ON";
-        graba(200,estado_motor);
-        graba(400,automatico);
-
-
+        //graba(200,estado_motor);
+        //graba(400,automatico);
       }
+
       if (PAYLOAD[1] == 'A'){  // Automatico
         Serial.println("Mensaje recibido : F");
        automatico = "HIGH";
        estado_motor = "OFF";
-       graba(200,estado_motor);
-       graba(400,automatico);
-
+       //graba(200,estado_motor);
+       //graba(400,automatico);
       }
 
 
 }
-}
+ }
+ 
 //------------------------------------------------------------//
 //----LEE TEMPERATURA ------
 void lee_temperatura(){
+  sensor.requestTemperatures();
   temp = sensor.getTempCByIndex(0);
   strtemp = String(temp,1); //1 decimal
   strtemp.toCharArray(valueStrTEMP, 15);
   client.publish(TEMP_EXT, valueStrTEMP);
-  //Serial.println("Enviando: [" +  String(TEMP_EXT) + "] " + String(strtemp));
+
 }
 
 void lee_temperatura_hoja(){
+  sensor.requestTemperatures();
   temp = sensor.getTempCByIndex(0);
   strtemp_hoja = String(temp,1); //1 decimal
   strtemp_hoja.toCharArray(valueStrleido_hoja, 15);
   client.publish(TEMP_HOJA, valueStrleido_hoja);
-  //Serial.println("Enviando: [" +  String(TEMP_EXT) + "] " + String(strtemp_hoja));
+  
 }
 
 
@@ -422,7 +438,8 @@ void reconnect(){                                              //FUNCION PARA RE
     
       Serial.println("");
       ////////////////////PUBLICACION TEMP AL INICIO//////////////////////////////
-      lee_temperatura();
+      //lee_temperatura();
+
 
         ////////////////////////////////////////////////////////////////////////////
 
@@ -484,10 +501,13 @@ void setup() {
   String reset = "reset";
   reset.toCharArray(RESET, 50);
 
-
+str_temp = lee(90);
+int lee_control_temp = atoi(str_temp.c_str());
 
 //temp_leido = lee(100); // Ajuste de Temperatura de Control
-automatico = lee(400);  // Memoria de estado Automatico  o Manual
+//automatico = lee(400);  // Memoria de estado Automatico  o Manual
+
+
 Serial.println("****ESTADO PLACA****");
 Serial.println("estado -> " + String (automatico));
 Serial.println("");
@@ -527,7 +547,7 @@ Serial.println("**Contador**: " +String(contador));
 
 //*****   L O O P   **************
 void loop() {
-sensor.requestTemperatures();
+
   server.handleClient();
   delay(2000);
 
@@ -563,44 +583,48 @@ unsigned long currentMillis3 = millis();
 if (currentMillis3 - previousMillis3 >= 20000) { //envia la temperatura cada 15 minutos (150000)
         previousMillis3 = currentMillis3;
         lee_temperatura();
-        //lee_temperatura_hoja();
+        lee_temperatura_hoja();
         contador = contador + 1;
         if (contador==1){
-           graba(140, strtemp);
-           if (str_debug= 1){
+           control_ext_1 = strtemp;
+           control_hoja_1 = strtemp_hoja;
+           if (str_debug== 1){
               Serial.println("**Temperatura Control 1 grabada!**: ");
             }
         }
         if (contador==2){
-           graba(150, strtemp);
-           graba(110, strtemp_hoja);
            contador = 0;
-           control_hoja_1 = lee(100);
-           control_ext_1 = lee(140);
-           control_hoja_2 = lee(110);
-           control_ext_2 = lee(150);
-           int str_control_1= atoi(control_hoja_1.c_str());
-           int str_control_2= atoi(control_hoja_2.c_str());
-           int str_control_11= atoi(control_ext_1.c_str());
-           int str_control_22= atoi(control_ext_2.c_str());
-           int gradiente_ext = str_control_11 - str_control_22;
-           int gradiente_hoja = str_control_1 - str_control_2;
-           if (str_debug= 1){
+           control_ext_2 = strtemp;
+           control_hoja_2 = strtemp_hoja;
+
+           str_temp = lee(90);
+           int lee_control_temp = atoi(str_temp.c_str());
+           //int lee_control_hoja = atoi([lee(160)].c_str());
+           int str_control_hoja_1= atoi(control_hoja_1.c_str());
+           int str_control_hoja_2= atoi(control_hoja_2.c_str());
+           int str_control_ext_1= atoi(control_ext_1.c_str());
+           int str_control_ext_2= atoi(control_ext_2.c_str());
+           int gradiente_ext = (str_control_ext_1 - str_control_ext_2);
+           int gradiente_hoja = (str_control_hoja_1- str_control_hoja_2);
+           if (str_debug== 1){
               Serial.println("**Temperatura Control 2 grabada!**: ");
               Serial.println("temperatura ext: " + String(strtemp));
+              Serial.println("temperatura ext: " + String(strtemp_hoja));
               Serial.println("temperatura Leida ext 1: " + String(control_ext_1));
               Serial.println("temperatura Leida ext 2: " + String(control_ext_2));
+              Serial.println("temperatura Leida hoja 1: " + String(control_hoja_1));
+              Serial.println("temperatura Leida hoja 2: " + String(control_hoja_2));
               Serial.println("Gradiente ext : "+ String(gradiente_ext));
               Serial.println("Gradiente hoja : "+ String(gradiente_hoja));
             }  
            
            
 
-            //*************** Control de temperatura externa****************//
-            if (gradiente_ext >= 1 & temp<13){  //GRADIENTE
+            //-------------- Control de temperatura externa----------------------//
+            if (gradiente_ext >= 1 & temp < lee_control_temp){  //GRADIENTE
                 digitalWrite(sirena, HIGH);
                 client.publish(ALERTA, "Alerta por ADVECCION");
-                if (str_debug= 1){
+                if (str_debug== 1){
                     Serial.println("******ADVECCION*******");
                     Serial.println("Alerta por ADVECCION : " );
                     Serial.println("Gradiente Ext : "+ String(gradiente_ext));
@@ -610,11 +634,11 @@ if (currentMillis3 - previousMillis3 >= 20000) { //envia la temperatura cada 15 
               digitalWrite(sirena, LOW);
               client.publish(ALERTA, "Condicion Normal");
             }
-            //*************** Control de temperatura hoja****************//
-            if (gradiente_hoja >= 1 & temp<13){  //GRADIENTE temp < 4
+            //-----------------Control de temperatura hoja--------------------//
+            if (gradiente_hoja >= 1 & temp < lee_control_temp){  //GRADIENTE temp < 4
                 digitalWrite(sirena, HIGH);
                 client.publish(ALERTA, "Alerta por Radiacion");
-                if (str_debug= 1){
+                if (str_debug== 1){
                     Serial.println("******RADIACION*******");
                     Serial.println("Alerta por RADIACION : " );
                     Serial.println("Gradiente Ext : "+ String(gradiente_ext)); 
@@ -624,11 +648,11 @@ if (currentMillis3 - previousMillis3 >= 20000) { //envia la temperatura cada 15 
               client.publish(ALERTA, "Radiacion Normal");
             }
 
-           //*************** Control de temperatura diferencia temp y hoja****************//
-           if (((str_control_22 - str_control_2)>1)& temp<13){  //GRADIENTE
+           //----------------- Control de temperatura diferencia temp y hoja------------//
+           if (((str_control_ext_2 - str_control_hoja_2)>1)& temp < lee_control_temp){  //GRADIENTE
               digitalWrite(sirena, HIGH);
               client.publish(ALERTA, "Alerta por Radiacion");
-                if (str_debug= 1){
+                if (str_debug== 1){
                     Serial.println("******RADIACION*******");
                     Serial.println("Alerta por RADIACION : " );
                     
@@ -636,7 +660,7 @@ if (currentMillis3 - previousMillis3 >= 20000) { //envia la temperatura cada 15 
            
            }
          }
-        
+       
       }
 /*
 unsigned long currentMillis = millis();
