@@ -74,13 +74,14 @@ int str_debug =0;
 
 //Temperaturas control
 String temp_control_1 = "4";
-String temp_control_2 = "3.5";
-String temp_control_3 = "3";
-String temp_control_4 = "3.5";
-String temp_control_5 = "2";
-String temp_control_6 = "2.5";
-String temp_control_7 = "2";
-String temp_control_8 = "1";
+byte temp_control_2 = 3.5;
+int temp_control_3 = 3;
+int temp_control_4 = 2.5;
+int temp_control_5 = 2;
+int temp_control_6 = 1.5;
+int temp_control_7 = 1;
+
+
 String control_ext_1 = "0";
 String control_ext_2 = "0";
 String control_hoja_1 = "0";
@@ -317,18 +318,12 @@ void callback(char* topic, byte* payload, unsigned int lenght){
 //------------------------------------------------------------//
 //----LEE TEMPERATURA ------
 void lee_temperatura(){
-  sensor.requestTemperatures();
-  temp = sensor.getTempCByIndex(0);
-  strtemp = String(temp,1); //1 decimal
   strtemp.toCharArray(valueStrTEMP, 15);
   client.publish(TEMP_EXT, valueStrTEMP);
 
 }
 
 void lee_temperatura_hoja(){
-  sensor.requestTemperatures();
-  temp = sensor.getTempCByIndex(0);
-  strtemp_hoja = String(temp,1); //1 decimal
   strtemp_hoja.toCharArray(valueStrleido_hoja, 15);
   client.publish(TEMP_HOJA, valueStrleido_hoja);
   
@@ -566,13 +561,28 @@ if (client.connected()==false){
 //SENSOR = analogRead(A0);				// lectura de entrada analogica A0
 //temp = sensor.getTempCByIndex(0);
 //strtemp = String(temp,0); //1 decimal
-
+  sensor.requestTemperatures();
+  temp = sensor.getTempCByIndex(0);
+  strtemp = String(temp,1); //1 decimal
+  strtemp = 4.5;
+  byte[] result = strtemp.ToByteArray();
+  //byte[] lee_strtemp = Encoding.ASCII.GetBytes(strtemp); 
+  //int lee_strtemp = atoi(strtemp.c_str());
+  const byte g = 4;
+  /*
+  https://stackoverflow.com/questions/16072709/converting-string-to-byte-array-in-c-sharp
+  string foo = "bla bla";
+byte[] result = foo.ToByteArray();*/
+ 
 
 //***************Control 1**********************//
-
-//***************Control 2**********************//
-
-
+ switch (result) {
+                    case (g):
+                     Serial.println("la temperatura bajo de los 4 grados");
+                     strtemp.toCharArray(valueStrTEMP, 15);
+                     client.publish(ALERTA, valueStrTEMP);
+                     break;
+                     }
 
 
 
